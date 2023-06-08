@@ -1,0 +1,104 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  username  String
+  password  String
+  firstName String
+  lastName  String
+  email     String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  operator  Operator[]
+}
+
+model Operator {
+  id                      Int               @id @default(autoincrement())
+  user                    User              @relation(fields: [userId], references: [id])
+  userId                  Int
+  certificationNumber     String
+  certificationDate       DateTime
+  certificationExpiryDate DateTime
+  measurementSteps        MeasurementStep[]
+}
+
+model Instrument {
+  id                      Int                      @id @default(autoincrement())
+  name                    String
+  manufacturer            String
+  model                   String
+  serialNumber            String
+  verificationDate        DateTime                 @db.Date
+  verificationDueDate     DateTime                 @db.Date
+  calibrationDate         DateTime                 @db.Date
+  upperLimit              Float
+  lowerLimit              Float
+  resolution              Float
+  accuracy                Float
+  measurementUnit         MeasurementUnit          @relation(fields: [measurementUnitId], references: [id])
+  measurementUnitId       Int
+  location                String
+  notes                   String?
+  measurementProgramSteps MeasurementProgramStep[]
+  measurementSteps        MeasurementStep[]
+}
+
+model MeasurementProgram {
+  id          Int                      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  steps       MeasurementProgramStep[]
+  Measurement Measurement[]
+}
+
+model MeasurementProgramStep {
+  id                Int                @id @default(autoincrement())
+  program           MeasurementProgram @relation(fields: [programId], references: [id])
+  programId         Int
+  name              String
+  description       String?
+  order             Int
+  targetValue       Float
+  usl               Float
+  lsl               Float
+  measurementUnit   MeasurementUnit    @relation(fields: [measurementUnitId], references: [id])
+  measurementUnitId Int
+  instrument        Instrument         @relation(fields: [instrumentId], references: [id])
+  instrumentId      Int
+}
+
+model Measurement {
+  id               Int                @id @default(autoincrement())
+  program          MeasurementProgram @relation(fields: [programId], references: [id])
+  programId        Int
+  measurementSteps MeasurementStep[]
+  startedAt        DateTime           @db.Date
+  finishedAt       DateTime?          @db.Date
+}
+
+model MeasurementStep {
+  id           Int         @id @default(autoincrement())
+  instrument   Instrument  @relation(fields: [instrumentId], references: [id])
+  instrumentId Int
+  measurement  Measurement @relation(fields: [measurmentId], references: [id])
+  measurmentId Int
+  operator     Operator    @relation(fields: [operatorId], references: [id])
+  operatorId   Int
+}
+
+model MeasurementUnit {
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  symbol                 String
+  Instrument             Instrument[]
+  MeasurementProgramStep MeasurementProgramStep[]
+}
